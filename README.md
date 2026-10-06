@@ -1,6 +1,6 @@
-# JWS LED Matrix P5 RGB HUB-75 (4x2 Panel, 256x64 Piksel) - ESP32
+# JWS alGaffar ESP32 RGB 4x2 (LED Matrix P5 HUB-75, 256x64 Piksel)
 
-Firmware Jam Waktu Sholat (JWS) otomatis berbasis **ESP32** untuk mengendalikan **LED Matrix P5 RGB HUB-75** berukuran **4x2 panel (256x64 piksel)**. Firmware ini dirancang khusus untuk bekerja optimal dengan **PCB Controller LED RGB ElektronMart V2.1 (Buffer 74HC245)**.
+Firmware Jam Waktu Sholat (JWS) otomatis berbasis **ESP32** untuk mengendalikan **LED Matrix P5 RGB HUB-75** berukuran **4x2 panel (256x64 piksel)**. Firmware ini dirancang khusus untuk bekerja optimal dengan **PCB Controller LED RGB ElektronMart V2.1 (Buffer 74HC245)** dan aplikasi Android **alGaffar**.
 
 ---
 
