@@ -77,6 +77,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none;}
   <button class="tab-btn" onclick="openTab('tabTeks', this)">Running Text</button>
   <button class="tab-btn" onclick="openTab('tabDisplay', this)">Display & Suara</button>
   <button class="tab-btn" onclick="openTab('tabMp3', this)">Audio MP3</button>
+  <button class="tab-btn" onclick="openTab('tabMode', this)">🔄 Mode Bluetooth</button>
 </div>
 
 <!-- TAB 1: MASJID & LOKASI -->
@@ -277,6 +278,21 @@ input:focus,select:focus{border-color:var(--primary);outline:none;}
   </div>
 </div>
 
+<!-- TAB 6: MODE BLUETOOTH / DUAL-MODE SWITCH -->
+<div id="tabMode" class="tab-content">
+  <div class="card" style="border: 2px solid #00897b; background: #e0f2f1;">
+    <h2 style="color: #004d40;">🔄 Saklar Sistem: Beralih ke Mode Bluetooth</h2>
+    <p style="font-size:13px; line-height: 1.6; margin-bottom:12px; color:#263238;">
+      Saat ini JWS beroperasi dalam <b>Mode WiFi Web Portal</b>.<br>
+      Jika Anda ingin mengontrol atau menyetel JWS menggunakan aplikasi Android <b>alGaffar</b>, tekan tombol di bawah ini.
+    </p>
+    <button type="button" class="btn btn-sync" onclick="switchModeBT()">📱 BERALIH KE MODE BLUETOOTH (ALGAFFAR)</button>
+    <div style="font-size:11px; margin-top:14px; color:#546e7a; border-top:1px dashed #80cbc4; padding-top:8px;">
+      💡 <b>Tips Saklar Fisik:</b> Anda juga dapat menukar mode (WiFi &harr; Bluetooth) kapan saja secara fisik tanpa smartphone, cukup dengan <b>menekan tombol RESET pada modul ESP32 sebanyak 2 kali berturut-turut</b> (dalam 4 detik). Buzzer akan berbunyi beep 3 kali sebagai tanda mode berhasil ditukar!
+    </div>
+  </div>
+</div>
+
 <script>
 function openTab(tabId, el){
   document.querySelectorAll('.tab-content').forEach(d => d.classList.remove('active'));
@@ -372,6 +388,14 @@ function getGpsHp(){
     });
   } else {
     alert('Browser tidak mendukung Geolocation.');
+  }
+}
+
+function switchModeBT(){
+  if (confirm("Beralih ke Mode Bluetooth untuk Aplikasi Android alGaffar?\n\nESP32 akan merestart ke mode Bluetooth.")) {
+    fetch('/switch-mode')
+      .then(() => alert("Perintah terkirim! ESP32 sedang merestart ke Mode Bluetooth.\nSilakan hubungkan aplikasi alGaffar ke Bluetooth 'JWS-RGB-P5'."))
+      .catch(() => alert("ESP32 sedang merestart ke Mode Bluetooth."));
   }
 }
 
@@ -510,6 +534,14 @@ void handleStopAudio() {
   server.send(200, "text/plain", "STOPPED");
 }
 
+extern void setCommMode(uint8_t newMode);
+
+void handleSwitchMode() {
+  server.send(200, "text/plain", "OK");
+  delay(300);
+  setCommMode(COMM_MODE_BT);
+}
+
 void handleRawCmd() {
   if (server.hasArg("val")) {
     String cmd = server.arg("val");
@@ -553,6 +585,7 @@ void initWiFiPortal() {
   server.on("/play-track", HTTP_GET, handlePlayTrack);
   server.on("/stop-audio", HTTP_GET, handleStopAudio);
   server.on("/cmd", HTTP_GET, handleRawCmd);
+  server.on("/switch-mode", HTTP_GET, handleSwitchMode);
 
   server.begin();
   Serial.println("[WEB] Web Server Port 80 Siap");

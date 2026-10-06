@@ -12,17 +12,21 @@
 #define MP3_PARAM_VERSION 101
 
 #define ADDR_MP3_PRM 880
-#define ADDR_JUMAT   1022
-#define ADDR_RUNSEL  1023
+#define ADDR_COMM_MODE 1021 // 1 byte: 0 = WiFi Web Dashboard, 1 = Bluetooth alGaffar
+#define ADDR_JUMAT     1022
+#define ADDR_RUNSEL    1023
+
+#define COMM_MODE_WIFI 0
+#define COMM_MODE_BT   1
 
 // -----------------------------------------------------------------------------------
-// Pilihan Fitur Komunikasi (Default: Keduanya Aktif = 1)
-// PENTING: Karena ESP32 mengontrol 8 panel HUB-75 DMA (256x64), memori internal SRAM
-// tidak mencukupi untuk menjalankan Bluetooth Classic (Bluedroid) dan WiFi secara bersamaan.
-// - Set ENABLE_WIFI 1 & ENABLE_BLUETOOTH 0 untuk Kontrol Web Portal (http://192.168.4.1)
-// - Set ENABLE_BLUETOOTH 1 & ENABLE_WIFI 0 jika ingin menggunakan Aplikasi Android alGaffar via Bluetooth
-#define ENABLE_BLUETOOTH 0  // 0 = Nonaktifkan Bluetooth agar WiFi stabil (Free RAM > 120KB)
-#define ENABLE_WIFI      1  // 1 = WiFi SoftAP "JWS-RGB-P5" & Web Dashboard (192.168.4.1)
+// SISTEM DUAL-MODE KOMUNIKASI (WIFI WEB & BLUETOOTH ALGAFFAR)
+// Kedua modul dikompilasi dalam firmware. Saat runtime, ESP32 mengaktifkan
+// salah satu mode secara eksklusif (via saklar Web, perintah Serial, atau tombol Reset 2x)
+// sehingga RAM selalu aman (>100KB) dan sistem tidak pernah crash/bootloop.
+// -----------------------------------------------------------------------------------
+#define ENABLE_BLUETOOTH 1  // Dukungan Bluetooth Classic SPP dalam firmware
+#define ENABLE_WIFI      1  // Dukungan WiFi SoftAP & Web Dashboard dalam firmware
 
 #pragma pack(push, 1)
 typedef struct {

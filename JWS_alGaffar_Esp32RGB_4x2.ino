@@ -245,6 +245,21 @@ void check_azzan() {
   }
 }
 
+uint8_t commMode = COMM_MODE_WIFI;
+void setCommMode(uint8_t newMode);
+RTC_DATA_ATTR static uint32_t rtc_reset_marker = 0;
+
+void setCommMode(uint8_t newMode) {
+  if (newMode > 1) return;
+  EEPROM.write(ADDR_COMM_MODE, newMode);
+  EEPROM.commit();
+  Serial.printf("[SWITCH] Beralih ke mode: %s. Me-restart sistem...\n",
+                (newMode == COMM_MODE_WIFI) ? "WIFI" : "BLUETOOTH");
+  BuzzerBeep(250);
+  delay(300);
+  ESP.restart();
+}
+
 // ===================================================================================
 // === SETUP =========================================================================
 // ===================================================================================
@@ -257,6 +272,37 @@ void setup() {
   pinMode(BUZZ_PIN, OUTPUT);
   digitalWrite(BUZZ_PIN, LOW);
 
+  // 4. Inisialisasi EEPROM Flash (1024 bytes)
+  EEPROM.begin(1024);
+  Serial.println("[EEPROM] Flash EEPROM Siap");
+
+  // Baca Mode Komunikasi dari EEPROM (0=WiFi, 1=Bluetooth)
+  commMode = EEPROM.read(ADDR_COMM_MODE);
+  if (commMode > 1) {
+    commMode = COMM_MODE_WIFI;
+    EEPROM.write(ADDR_COMM_MODE, COMM_MODE_WIFI);
+    EEPROM.commit();
+  }
+
+  // Deteksi Saklar Fisik Double-Reset (< 4 detik setelah boot sebelumnya):
+  if (rtc_reset_marker == 0xDEADBEEF) {
+    rtc_reset_marker = 0;
+    // Balikkan mode: WiFi <-> Bluetooth
+    commMode = (commMode == COMM_MODE_WIFI) ? COMM_MODE_BT : COMM_MODE_WIFI;
+    EEPROM.write(ADDR_COMM_MODE, commMode);
+    EEPROM.commit();
+
+    // Bunyikan buzzer 3x konfirmasi saklar aktif
+    for (int b = 0; b < 3; b++) {
+      digitalWrite(BUZZ_PIN, HIGH); delay(120);
+      digitalWrite(BUZZ_PIN, LOW); delay(100);
+    }
+    Serial.printf("[SWITCH] SAKLAR RESET CEPAT TERDETEKSI! Mode dibalik menjadi: %s\n",
+                  (commMode == COMM_MODE_WIFI) ? "WIFI" : "BLUETOOTH");
+  } else {
+    rtc_reset_marker = 0xDEADBEEF;
+  }
+
   // 2. Inisialisasi I2C (RTC DS3231) pada Pin ElektronMart (SDA: 32, SCL: 33)
   Wire.begin(RTC_SDA, RTC_SCL);
   Wire.setTimeOut(100);
@@ -266,17 +312,15 @@ void setup() {
   SerialMP3.begin(9600, SERIAL_8N1, MP3_RX, MP3_TX);
   Serial.println("[MP3] Hardware Serial2 DFPlayer Siap (RX: 13, TX: 14)");
 
-  // 4. Inisialisasi EEPROM Flash (1024 bytes)
-  EEPROM.begin(1024);
-  Serial.println("[EEPROM] Flash EEPROM Siap");
-
   // Inisialisasi parameter sebelum beep
   GetPrm();
   updateTime();
   mp3_init();
 
   // 5. Beep selamat datang
-  BuzzerBeep(150);
+  if (rtc_reset_marker == 0xDEADBEEF) {
+    BuzzerBeep(150);
+  }
 
   uint8_t lastSel = EEPROM.read(ADDR_RUNSEL);
   RunSel = (lastSel >= 100 && lastSel <= 104) ? lastSel : 1;
@@ -290,17 +334,48 @@ void setup() {
   Serial.printf("[SYSTEM] Free Heap sesudah Display: %d bytes\n", ESP.getFreeHeap());
   update_All_data();
 
-  // 7. Inisialisasi WiFi SoftAP & Web Portal TERLEBIH DAHULU agar jaringan stabil
-#if ENABLE_WIFI
-  initWiFiPortal();
-  Serial.printf("[SYSTEM] Free Heap sesudah WiFi: %d bytes\n", ESP.getFreeHeap());
-#endif
+  // Tampilkan Splash Screen Mode Aktif pada Layar Matrix (1.5 detik)
+  if (matrix) {
+    matrix->clearScreen();
+    matrix->setTextSize(1);
+    matrix->setTextColor(RGB_GOLD);
+    matrix->setCursor(4, 6);
+    matrix->print("JWS P5 RGB (256x64)");
 
-  // 8. Inisialisasi Bluetooth Classic SPP untuk aplikasi alGaffar
-#if ENABLE_BLUETOOTH
-  SerialBT.begin("JWS-RGB-P5");
-  Serial.println("[BT] Bluetooth SPP Aktif dengan nama: JWS-RGB-P5");
+    if (commMode == COMM_MODE_WIFI) {
+      matrix->setTextColor(RGB_CYAN);
+      matrix->setCursor(4, 22);
+      matrix->print("MODE: WIFI WEB DASHBOARD");
+      matrix->setTextColor(RGB_LIME);
+      matrix->setCursor(4, 36);
+      matrix->print("SSID: JWS-RGB-P5 (192.168.4.1)");
+    } else {
+      matrix->setTextColor(RGB_CYAN);
+      matrix->setCursor(4, 22);
+      matrix->print("MODE: BLUETOOTH (alGaffar)");
+      matrix->setTextColor(RGB_LIME);
+      matrix->setCursor(4, 36);
+      matrix->print("Nama BT: JWS-RGB-P5");
+    }
+    matrix->setTextColor(RGB_DARKGREY);
+    matrix->setCursor(4, 50);
+    matrix->print("Tekan Reset 2x ganti mode");
+    delay(1500);
+    matrix->clearScreen();
+  }
+
+  // 7. Aktifkan HANYA SALAH SATU komunikasi untuk menjamin RAM bebas melimpah (>100KB)
+  if (commMode == COMM_MODE_WIFI) {
+#if ENABLE_WIFI
+    initWiFiPortal();
+    Serial.println("[SYSTEM] Mode Komunikasi: WIFI WEB PORTAL (192.168.4.1)");
 #endif
+  } else {
+#if ENABLE_BLUETOOTH
+    SerialBT.begin("JWS-RGB-P5");
+    Serial.println("[SYSTEM] Mode Komunikasi: BLUETOOTH SPP (alGaffar)");
+#endif
+  }
 
   Serial.printf("[SYSTEM] Free Heap: %d bytes\n", ESP.getFreeHeap());
   Serial.println("[SYSTEM] JWS P5 RGB Siap Beroperasi!");
@@ -310,11 +385,19 @@ void setup() {
 // === MAIN LOOP =====================================================================
 // ===================================================================================
 void loop() {
-  // Layani koneksi Bluetooth & Web WiFi
+  // Layani koneksi Bluetooth/Serial & Web WiFi
   serviceBluetooth();
 #if ENABLE_WIFI
-  serviceWiFiPortal();
+  if (commMode == COMM_MODE_WIFI) {
+    serviceWiFiPortal();
+  }
 #endif
+
+  // Bersihkan reset marker setelah 4 detik beroperasi normal
+  static uint32_t bootStartMs = millis();
+  if (rtc_reset_marker != 0 && (uint32_t)(millis() - bootStartMs) > 4000) {
+    rtc_reset_marker = 0;
+  }
 
   updateTime();
   check_mp3();

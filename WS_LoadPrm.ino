@@ -70,9 +70,11 @@ void serviceBluetooth() {
   uint32_t currentMs = millis();
 
 #if ENABLE_BLUETOOTH
-  // Terima data dari Bluetooth HP Android (alGaffar)
-  while (SerialBT.available() > 0) {
-    processIncomingChar((char)SerialBT.read());
+  // Terima data dari Bluetooth HP Android (alGaffar) jika mode Bluetooth aktif
+  if (commMode == COMM_MODE_BT) {
+    while (SerialBT.available() > 0) {
+      processIncomingChar((char)SerialBT.read());
+    }
   }
 #endif
 
@@ -415,8 +417,25 @@ boolean writeDirectPlayCommand() {
   return false;
 }
 
+extern void setCommMode(uint8_t newMode);
+
 void LoadPrm() {
   boolean updated = false;
+
+  // Perintah alih mode sistem (WiFi <-> Bluetooth)
+  if (strcmp(CH_Prm, "WIFI") == 0 || strcmp(CH_Prm, "CWIFI") == 0 || strcmp(CH_Prm, "CSW0") == 0) {
+    setCommMode(COMM_MODE_WIFI);
+    return;
+  }
+  if (strcmp(CH_Prm, "BT") == 0 || strcmp(CH_Prm, "CBT") == 0 || strcmp(CH_Prm, "CSW1") == 0) {
+    setCommMode(COMM_MODE_BT);
+    return;
+  }
+  if (commandCodeIs('S', 'W')) {
+    uint8_t targetMode = (commMode == COMM_MODE_WIFI) ? COMM_MODE_BT : COMM_MODE_WIFI;
+    setCommMode(targetMode);
+    return;
+  }
 
   if (CH_Prm[0] == 'C') updated = writeTextCommand();
   else if (CH_Prm[0] == 'N') {
