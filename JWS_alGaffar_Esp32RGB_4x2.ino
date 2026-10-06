@@ -114,6 +114,7 @@ void initDisplay() {
 
   mxconfig.clkphase = false;
   mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M;
+  mxconfig.setPixelColorDepthBits(5); // 5-bit color depth menghemat ~80KB DMA RAM untuk kestabilan WiFi & BT
 
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
   dma_display->begin();
@@ -258,6 +259,7 @@ void setup() {
 
   // 2. Inisialisasi I2C (RTC DS3231) pada Pin ElektronMart (SDA: 32, SCL: 33)
   Wire.begin(RTC_SDA, RTC_SCL);
+  Wire.setTimeOut(100);
   Serial.println("[RTC] I2C RTC DS3231 Siap (SDA: 32, SCL: 33)");
 
   // 3. Inisialisasi Hardware Serial2 untuk DFPlayer Mini (RX2: 13, TX2: 14)
@@ -268,12 +270,13 @@ void setup() {
   EEPROM.begin(1024);
   Serial.println("[EEPROM] Flash EEPROM Siap");
 
+  // Inisialisasi parameter sebelum beep
+  GetPrm();
+  updateTime();
+  mp3_init();
+
   // 5. Beep selamat datang
   BuzzerBeep(150);
-
-  updateTime();
-  GetPrm();
-  mp3_init();
 
   uint8_t lastSel = EEPROM.read(ADDR_RUNSEL);
   RunSel = (lastSel >= 100 && lastSel <= 104) ? lastSel : 1;
@@ -282,20 +285,24 @@ void setup() {
   }
 
   // 6. Inisialisasi Hardware Display P5 RGB HUB-75
+  Serial.printf("[SYSTEM] Free Heap sebelum Display: %d bytes\n", ESP.getFreeHeap());
   initDisplay();
+  Serial.printf("[SYSTEM] Free Heap sesudah Display: %d bytes\n", ESP.getFreeHeap());
   update_All_data();
 
-  // 7. Inisialisasi Bluetooth Classic SPP untuk aplikasi alGaffar
+  // 7. Inisialisasi WiFi SoftAP & Web Portal TERLEBIH DAHULU agar jaringan stabil
+#if ENABLE_WIFI
+  initWiFiPortal();
+  Serial.printf("[SYSTEM] Free Heap sesudah WiFi: %d bytes\n", ESP.getFreeHeap());
+#endif
+
+  // 8. Inisialisasi Bluetooth Classic SPP untuk aplikasi alGaffar
 #if ENABLE_BLUETOOTH
   SerialBT.begin("JWS-RGB-P5");
   Serial.println("[BT] Bluetooth SPP Aktif dengan nama: JWS-RGB-P5");
 #endif
 
-  // 8. Inisialisasi WiFi SoftAP & Web Portal
-#if ENABLE_WIFI
-  initWiFiPortal();
-#endif
-
+  Serial.printf("[SYSTEM] Free Heap: %d bytes\n", ESP.getFreeHeap());
   Serial.println("[SYSTEM] JWS P5 RGB Siap Beroperasi!");
 }
 
@@ -374,4 +381,7 @@ void loop() {
       break;
   }
   RunFinish = 0;
+
+  // Berikan waktu proses singkat untuk background network stack WiFi
+  delay(2);
 }

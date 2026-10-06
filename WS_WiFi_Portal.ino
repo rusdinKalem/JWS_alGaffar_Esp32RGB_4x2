@@ -526,11 +526,22 @@ void handleRawCmd() {
 // Inisialisasi WiFi Access Point & WebServer
 // -----------------------------------------------------------------------------------
 void initWiFiPortal() {
+  WiFi.disconnect(true);
+  delay(50);
   WiFi.mode(WIFI_AP);
-  WiFi.softAP("JWS-RGB-P5", "12345678");
+  
+  IPAddress local_ip(192, 168, 4, 1);
+  IPAddress gateway(192, 168, 4, 1);
+  IPAddress subnet(255, 255, 255, 0);
+  WiFi.softAPConfig(local_ip, gateway, subnet);
 
-  Serial.print("[WIFI] Access Point Aktif: JWS-RGB-P5 | IP: ");
-  Serial.println(WiFi.softAPIP());
+  bool ok = WiFi.softAP("JWS-RGB-P5", "12345678");
+  if (ok) {
+    Serial.print("[WIFI] Access Point Aktif: JWS-RGB-P5 | IP: ");
+    Serial.println(WiFi.softAPIP());
+  } else {
+    Serial.println("[WIFI] GAGAL memulai Access Point!");
+  }
 
   server.on("/", HTTP_GET, handleRoot);
   server.on("/get-data", HTTP_GET, handleGetData);
