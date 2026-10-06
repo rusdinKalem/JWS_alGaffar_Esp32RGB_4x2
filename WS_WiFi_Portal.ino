@@ -4,6 +4,9 @@
  * Akses: Hubungkan WiFi ke "JWS-RGB-P5", buka browser ke http://192.168.4.1
  *************************************************************************************/
 
+#include "Config_Params.h"
+
+#if ENABLE_WIFI
 #include <WiFi.h>
 #include <WebServer.h>
 
@@ -547,3 +550,10 @@ void initWiFiPortal() {
 void serviceWiFiPortal() {
   server.handleClient();
 }
+
+#else
+
+void initWiFiPortal() {}
+void serviceWiFiPortal() {}
+
+#endif

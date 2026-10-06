@@ -60,6 +60,12 @@ Pastikan library berikut telah terpasang di Arduino IDE:
 - **Flash Frequency**: `80MHz`
 - **Core Debug Level**: `None`
 
+> ⚠️ **PENTING - Mengatasi Error "Sketch too big / text section exceeds available space":**
+> Ukuran binary firmware dengan driver HUB75 DMA + Bluetooth Classic + Web Dashboard WiFi adalah sekitar **1.73 MB**.
+> Jika Partition Scheme masih pada default ("Default 4MB with spiffs"), kapasitas aplikasi dibatasi hanya 1.25 MB (1.310.720 bytes) sehingga upload akan gagal.
+> **Solusi:** Di Arduino IDE, buka menu **Tools** -> **Partition Scheme** -> pilih **"Huge APP (3MB No OTA/1MB SPIFFS)"**.
+> *(Alternatif: Jika Anda hanya ingin menggunakan salah satu fitur, Anda dapat menonaktifkan Bluetooth atau WiFi di `Config_Params.h` dengan mengubah `#define ENABLE_BLUETOOTH 0` atau `#define ENABLE_WIFI 0`)*.
+
 ---
 
 ## 📱 Cara Penggunaan

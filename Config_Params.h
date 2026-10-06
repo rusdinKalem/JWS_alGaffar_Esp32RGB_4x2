@@ -15,6 +15,14 @@
 #define ADDR_JUMAT   1022
 #define ADDR_RUNSEL  1023
 
+// -----------------------------------------------------------------------------------
+// Pilihan Fitur Komunikasi (Default: Keduanya Aktif = 1)
+// Jika kedua fitur aktif (1), WAJIB pilih Partition Scheme: "Huge APP (3MB No OTA)"
+// Jika hanya aktifkan salah satu (0 dan 1), sketch muat di skema partisi Default.
+// -----------------------------------------------------------------------------------
+#define ENABLE_BLUETOOTH 1  // 1 = Bluetooth Classic SPP Aktif (Aplikasi Android alGaffar)
+#define ENABLE_WIFI      1  // 1 = WiFi SoftAP & Web Dashboard Aktif (http://192.168.4.1)
+
 #pragma pack(push, 1)
 typedef struct {
   uint8_t state;  // 1 byte  add 0 (PARAM_VERSION)

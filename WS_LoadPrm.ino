@@ -16,7 +16,11 @@ static uint32_t serialLastByteMs = 0;
 static boolean serialReceiving = false;
 static boolean serialDiscarding = false;
 
+#include "Config_Params.h"
+
+#if ENABLE_BLUETOOTH
 extern BluetoothSerial SerialBT;
+#endif
 
 boolean commandCodeIs(char firstCode, char secondCode) {
   return CH_Prm[1] == firstCode && CH_Prm[2] == secondCode;
@@ -65,10 +69,12 @@ void processIncomingChar(char incoming) {
 void serviceBluetooth() {
   uint32_t currentMs = millis();
 
+#if ENABLE_BLUETOOTH
   // Terima data dari Bluetooth HP Android (alGaffar)
   while (SerialBT.available() > 0) {
     processIncomingChar((char)SerialBT.read());
   }
+#endif
 
   // Terima juga data dari Serial USB PC untuk kemudahan testing
   while (Serial.available() > 0) {

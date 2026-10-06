@@ -17,23 +17,28 @@
 #include <Wire.h>
 #include <EEPROM.h>
 #include <DS3231.h>
-#include <BluetoothSerial.h>
-#include <WebServer.h>
-
 #include "Config_Pins.h"
 #include "Config_Params.h"
 #include "Display_HUB75.h"
 
-// -----------------------------------------------------------------------------------
-// Objek Perangkat Keras
-// -----------------------------------------------------------------------------------
+// Objek Hardware Display HUB-75 DMA & Canvas Virtual
 MatrixPanel_I2S_DMA *dma_display = nullptr;
 VirtualMatrixPanel_T<VIRTUAL_CHAIN_TYPE> *matrix = nullptr;
+
+// Objek RTC DS3231 & DFPlayer Mini (Hardware Serial2)
 RTClib RTC;
 DS3231 Clock;
-BluetoothSerial SerialBT;
 HardwareSerial SerialMP3(2);
+
+#if ENABLE_BLUETOOTH
+#include <BluetoothSerial.h>
+BluetoothSerial SerialBT;
+#endif
+
+#if ENABLE_WIFI
+#include <WebServer.h>
 WebServer server(80);
+#endif
 
 // -----------------------------------------------------------------------------------
 // Variabel Global
@@ -281,11 +286,15 @@ void setup() {
   update_All_data();
 
   // 7. Inisialisasi Bluetooth Classic SPP untuk aplikasi alGaffar
+#if ENABLE_BLUETOOTH
   SerialBT.begin("JWS-RGB-P5");
   Serial.println("[BT] Bluetooth SPP Aktif dengan nama: JWS-RGB-P5");
+#endif
 
   // 8. Inisialisasi WiFi SoftAP & Web Portal
+#if ENABLE_WIFI
   initWiFiPortal();
+#endif
 
   Serial.println("[SYSTEM] JWS P5 RGB Siap Beroperasi!");
 }
@@ -296,7 +305,9 @@ void setup() {
 void loop() {
   // Layani koneksi Bluetooth & Web WiFi
   serviceBluetooth();
+#if ENABLE_WIFI
   serviceWiFiPortal();
+#endif
 
   updateTime();
   check_mp3();
