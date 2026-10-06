@@ -372,7 +372,16 @@ void setup() {
 #endif
   } else {
 #if ENABLE_BLUETOOTH
-    SerialBT.begin("JWS-RGB-P5");
+    SerialBT.enableSSP();
+    // disableBLE = true agar memori BLE dialihkan ke heap Classic BT (menghemat >25KB RAM)
+    bool btOk = SerialBT.begin("JWS-RGB-P5", false, true);
+    if (btOk) {
+      Serial.println("[BT] SerialBT.begin('JWS-RGB-P5') BERHASIL");
+      esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
+      Serial.println("[BT] Bluetooth Siap! Nama Perangkat: JWS-RGB-P5");
+    } else {
+      Serial.println("[BT] ERROR: SerialBT.begin() GAGAL!");
+    }
     Serial.println("[SYSTEM] Mode Komunikasi: BLUETOOTH SPP (alGaffar)");
 #endif
   }
