@@ -18,6 +18,7 @@
 
 #define COMM_MODE_WIFI 0
 #define COMM_MODE_BT   1
+#define DEFAULT_COMM_MODE COMM_MODE_BT
 
 // -----------------------------------------------------------------------------------
 // SISTEM DUAL-MODE KOMUNIKASI (WIFI WEB & BLUETOOTH ALGAFFAR)

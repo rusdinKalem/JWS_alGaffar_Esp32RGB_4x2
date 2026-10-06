@@ -245,7 +245,7 @@ void check_azzan() {
   }
 }
 
-uint8_t commMode = COMM_MODE_WIFI;
+uint8_t commMode = DEFAULT_COMM_MODE;
 void setCommMode(uint8_t newMode);
 RTC_DATA_ATTR static uint32_t rtc_reset_marker = 0;
 
@@ -276,11 +276,11 @@ void setup() {
   EEPROM.begin(1024);
   Serial.println("[EEPROM] Flash EEPROM Siap");
 
-  // Baca Mode Komunikasi dari EEPROM (0=WiFi, 1=Bluetooth)
+  // Baca Mode Komunikasi dari EEPROM (0=WiFi, 1=Bluetooth, default: Bluetooth)
   commMode = EEPROM.read(ADDR_COMM_MODE);
   if (commMode > 1) {
-    commMode = COMM_MODE_WIFI;
-    EEPROM.write(ADDR_COMM_MODE, COMM_MODE_WIFI);
+    commMode = DEFAULT_COMM_MODE;
+    EEPROM.write(ADDR_COMM_MODE, DEFAULT_COMM_MODE);
     EEPROM.commit();
   }
 
