@@ -5,6 +5,7 @@
  *************************************************************************************/
 
 #include "Display_HUB75.h"
+#include "Bitmap_Icons.h"
 
 // Dimensi Virtual Display
 #define DISP_W 256
@@ -61,6 +62,22 @@ void drawTextCentered(int x1, int x2, int y, const char* str, uint16_t color, ui
   matrix->setTextColor(color);
   matrix->setCursor(startX, y);
   matrix->print(str);
+}
+
+// -----------------------------------------------------------------------------------
+// Helper Gambar Pignet / Monochrome 1-Bit Bitmap (Ukuran 40x40 Piksel)
+// -----------------------------------------------------------------------------------
+void drawMonoBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color) {
+  if (!matrix || !bitmap) return;
+  int16_t byteWidth = (w + 7) / 8;
+  for (int16_t j = 0; j < h; j++) {
+    for (int16_t i = 0; i < w; i++) {
+      uint8_t byteVal = pgm_read_byte(&bitmap[j * byteWidth + (i / 8)]);
+      if (byteVal & (128 >> (i & 7))) {
+        matrix->drawPixel(x + i, y + j, color);
+      }
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------------
@@ -263,17 +280,20 @@ void drawOnAzzan(int DrawAdd) {
     lsRn = Tmr;
     matrix->clearScreen();
 
+    // Bingkai dan teks informasi tetap tampil (tidak berkedip)
+    matrix->drawRect(0, 0, DISP_W, DISP_H, RGB_RED);
+    matrix->drawRect(2, 2, DISP_W - 4, DISP_H - 4, RGB_YELLOW);
+
+    // Pignet / Icon Masjid 40x40 di sisi kiri (X=8, Y=12) - Kuning
+    drawMonoBitmap(8, 12, bmp_masjid_40x40, 40, 40, RGB_YELLOW);
+
+    drawTextCentered(52, DISP_W - 8, 6, "--- WAKTU SHOLAT TELAH TIBA ---", RGB_WHITE, 1);
+    drawTextCentered(52, DISP_W - 8, 48, "SAATNYA MENGUMANDANGKAN ADZAN", RGB_CYAN, 1);
+
+    // Hanya nama sholat yang berkedip
+    const char* pName = jumat ? "JUM'AT" : sholatN(SholatNow);
     if ((ct % 2) == 0) {
-      // Bingkai luar berkedip
-      matrix->drawRect(0, 0, DISP_W, DISP_H, RGB_RED);
-      matrix->drawRect(2, 2, DISP_W - 4, DISP_H - 4, RGB_YELLOW);
-
-      drawTextCentered(0, DISP_W, 6, "--- WAKTU SHOLAT TELAH TIBA ---", RGB_WHITE, 1);
-
-      const char* pName = jumat ? "JUM'AT" : sholatN(SholatNow);
-      drawTextCentered(0, DISP_W, 20, pName, RGB_YELLOW, 3);
-
-      drawTextCentered(0, DISP_W, 48, "SAATNYA MENGUMANDANGKAN ADZAN", RGB_CYAN, 1);
+      drawTextCentered(52, DISP_W - 8, 20, pName, RGB_YELLOW, 3);
       Buzzer(1);
     } else {
       Buzzer(0);
@@ -312,20 +332,23 @@ void drawAzzan(int DrawAdd) {
 
     matrix->drawRoundRect(4, 4, DISP_W - 8, DISP_H - 8, 4, RGB_RED);
 
+    // Pignet / Icon Orang Adzan 40x40 di sisi kiri (X=8, Y=12) - Cyan (Siluet Asli)
+    drawMonoBitmap(8, 12, bmp_adzan_40x40, 40, 40, RGB_CYAN);
+
     if (jumat) {
-      drawTextCentered(0, DISP_W, 8, "ACARA SHOLAT JUM'AT", RGB_YELLOW, 1);
+      drawTextCentered(52, DISP_W - 8, 8, "ACARA SHOLAT JUM'AT", RGB_YELLOW, 1);
     } else {
       char judulAdzan[32];
       snprintf(judulAdzan, sizeof(judulAdzan), "ADZAN %s", sholatN(SholatNow));
-      drawTextCentered(0, DISP_W, 8, judulAdzan, RGB_YELLOW, 1);
+      drawTextCentered(52, DISP_W - 8, 8, judulAdzan, RGB_YELLOW, 1);
     }
 
     // Countdown Adzan Besar
     char cdStr[16];
     snprintf(cdStr, sizeof(cdStr), "%s:%s", buffMnt, buffScd);
-    drawTextCentered(0, DISP_W, 22, cdStr, RGB_WHITE, 3);
+    drawTextCentered(52, DISP_W - 8, 22, cdStr, RGB_WHITE, 3);
 
-    drawTextCentered(0, DISP_W, 50, "MENDENGARKAN & MENJAWAB ADZAN", RGB_LIME, 1);
+    drawTextCentered(52, DISP_W - 8, 50, "MENDENGARKAN & MENJAWAB ADZAN", RGB_LIME, 1);
 
     // Beep 5 detik terakhir sebelum adzan selesai
     if (ct > (ct_limit - 5)) {
@@ -369,20 +392,24 @@ void drawIqomah(int DrawAdd) {
     // Bingkai Luar
     matrix->drawRoundRect(4, 2, DISP_W - 8, DISP_H - 4, 4, RGB_CYAN);
 
+    // Pignet / Icon Orang Sholat Takbir 40x40 di sisi kiri (X=8, Y=6) - Hijau
+    drawMonoBitmap(8, 6, bmp_sholat_takbir_40x40, 40, 40, RGB_GREEN);
+
     // Header
     char iqomahTitle[32];
     snprintf(iqomahTitle, sizeof(iqomahTitle), "MENJELANG IQOMAH %s", sholatN(SholatNow));
-    drawTextCentered(0, DISP_W, 6, iqomahTitle, RGB_CYAN, 1);
+    drawTextCentered(52, DISP_W - 8, 6, iqomahTitle, RGB_CYAN, 1);
 
     // Countdown Angka Raksasa (Text Size 3)
     char countStr[16];
     snprintf(countStr, sizeof(countStr), "%s:%s", buffMnt, buffScd);
-    drawTextCentered(0, DISP_W, 20, countStr, RGB_GOLD, 3);
+    drawTextCentered(52, DISP_W - 8, 20, countStr, RGB_GOLD, 3);
 
-    // Progress Bar Iqomah di bagian bawah
-    int progressPx = (int)((float)ct / (float)cn_l * (float)(DISP_W - 20));
-    matrix->drawRect(10, 48, DISP_W - 20, 8, RGB_DARKGREY);
-    matrix->fillRect(10, 48, progressPx, 8, RGB_GREEN);
+    // Progress Bar Iqomah di bagian bawah (X=52..246)
+    int barW = DISP_W - 10 - 52;
+    int progressPx = (int)((float)ct / (float)cn_l * (float)barW);
+    matrix->drawRect(52, 48, barW, 8, RGB_DARKGREY);
+    matrix->fillRect(52, 48, progressPx, 8, RGB_GREEN);
 
     // Beep 10 detik terakhir menuju Iqomah
     if (ct > (cn_l - 11)) {
@@ -397,6 +424,62 @@ void drawIqomah(int DrawAdd) {
     dwDone(DrawAdd);
     ct = 0;
     Buzzer(0);
+  }
+}
+
+// -----------------------------------------------------------------------------------
+// FASE KHUTBAH JUM'AT: Tampilan Pesan Khutbah (RunSel 103)
+// -----------------------------------------------------------------------------------
+void drawKhutbah(int DrawAdd) {
+  if (!matrix) return;
+  if (!dwDo(DrawAdd)) return;
+
+  static int16_t scrollX = DISP_W - 8;
+  static uint32_t lastScrollMs = 0;
+  static bool initDone = false;
+  uint32_t currentMs = millis();
+
+  const char* msg = drawInfo(730);
+  int textLenPx = strlen(msg) * 6;
+
+  if (reset_x != 0 || !initDone) {
+    scrollX = DISP_W - 8;
+    reset_x = 0;
+    initDone = true;
+  }
+
+  if (currentMs - lastScrollMs > (uint32_t)Prm.RT) {
+    lastScrollMs = currentMs;
+    scrollX--;
+    if (scrollX < (52 - textLenPx)) {
+      scrollX = DISP_W - 8;
+      initDone = false;
+      dwDone(DrawAdd);
+      return;
+    }
+
+    matrix->clearScreen();
+
+    // Bingkai Luar
+    matrix->drawRoundRect(4, 2, DISP_W - 8, DISP_H - 4, 4, RGB_PURPLE);
+
+    // Pignet / Icon Orang Khutbah 40x40 di sisi kiri (X=8, Y=12) - Kuning/Emas
+    drawMonoBitmap(8, 12, bmp_khutbah_40x40, 40, 40, RGB_YELLOW);
+
+    // Header Khutbah
+    drawTextCentered(52, DISP_W - 8, 6, "KHUTBAH JUM'AT", RGB_YELLOW, 1);
+    drawTextCentered(52, DISP_W - 8, 50, "DENGARKAN KHUTBAH DENGAN SEKSAMA", RGB_CYAN, 1);
+
+    // Running text pesan khutbah di tengah
+    matrix->setTextSize(1);
+    matrix->setTextColor(RGB_WHITE);
+    matrix->setCursor(scrollX, 26);
+    matrix->print(msg);
+
+    // Lindungi area icon di sisi kiri agar tidak tertabrak running text
+    matrix->fillRect(0, 0, 52, DISP_H, RGB_BLACK);
+    matrix->drawRoundRect(4, 2, DISP_W - 8, DISP_H - 4, 4, RGB_PURPLE);
+    drawMonoBitmap(8, 12, bmp_khutbah_40x40, 40, 40, RGB_YELLOW);
   }
 }
 

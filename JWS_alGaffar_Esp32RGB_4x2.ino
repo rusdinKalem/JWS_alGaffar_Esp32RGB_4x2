@@ -88,6 +88,7 @@ void dwMrq(const char* msg, int speed, int drawAdd);
 void drawOnAzzan(int DrawAdd);
 void drawAzzan(int DrawAdd);
 void drawIqomah(int DrawAdd);
+void drawKhutbah(int DrawAdd);
 void blinkBlock(int DrawAdd);
 char* drawWelcome();
 char* drawDateH();
@@ -433,8 +434,7 @@ void loop() {
   drawIqomah(101);
   if (RunSel == 102)
     dwMrq(drawInfo(580), Prm.RT, 102);  // Pesan Sholat biasa
-  if (RunSel == 103)
-    dwMrq(drawInfo(730), Prm.RT, 103);  // Pesan Sholat jumat
+  drawKhutbah(103);                     // Pesan Khutbah jumat dengan pignet orang khutbah
   blinkBlock(104);
 
   // Transisi Status Tampilan
